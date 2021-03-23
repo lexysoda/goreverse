@@ -75,6 +75,8 @@ func (p *Proxy) refreshHosts() {
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	out := fmt.Sprintf("Received request for %s: ", r.Host)
+	p.Lock()
+	defer p.Unlock()
 	if h, ok := p.Hosts[r.Host]; ok {
 		log.Printf("%sRedirecting to %s\n", out, h)
 		proxy := httputil.NewSingleHostReverseProxy(h)
