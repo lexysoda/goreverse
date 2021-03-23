@@ -17,10 +17,14 @@ import (
 
 type Proxy struct {
 	Hosts    map[string]*url.URL
-	cli      *client.Client
+	cli      dockerClient
 	interval time.Duration
 	label    string
 	sync.Mutex
+}
+
+type dockerClient interface {
+	ContainerList(context.Context, types.ContainerListOptions) ([]types.Container, error)
 }
 
 func New(interval string, label string) (*Proxy, error) {
