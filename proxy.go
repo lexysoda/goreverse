@@ -16,24 +16,34 @@ import (
 )
 
 type Proxy struct {
-	Hosts map[string]*url.URL
-	cli   *client.Client
+	Hosts    map[string]*url.URL
+	cli      *client.Client
+	interval time.Duration
+	label    string
 	sync.Mutex
 }
 
-func New() (*Proxy, error) {
+func New(interval string, label string) (*Proxy, error) {
+	dur, err := time.ParseDuration(interval)
+	if err != nil {
+		return nil, err
+	} else if dur <= 0 {
+		return nil, fmt.Errorf("Duration must be > 0")
+	}
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, err
 	}
 	return &Proxy{
-		Hosts: map[string]*url.URL{},
-		cli:   cli,
+		Hosts:    map[string]*url.URL{},
+		cli:      cli,
+		interval: dur,
+		label:    label,
 	}, nil
 }
 
 func (p *Proxy) Start() {
-	t := time.NewTicker(time.Minute)
+	t := time.NewTicker(p.interval)
 	go func() {
 		for {
 			p.refreshHosts()
@@ -46,7 +56,7 @@ func (p *Proxy) refreshHosts() {
 	log.Println("Refreshing host mappings")
 	newHosts := map[string]*url.URL{}
 	args := filters.NewArgs()
-	args.Add("label", "goreverse")
+	args.Add("label", p.label)
 	containers, err := p.cli.ContainerList(context.Background(), types.ContainerListOptions{Filters: args})
 	if err != nil {
 		log.Printf("Failed to query the docker api: %s\n", err)
@@ -54,9 +64,9 @@ func (p *Proxy) refreshHosts() {
 	}
 
 	for _, c := range containers {
-		from, err := url.Parse(c.Labels["goreverse"])
+		from, err := url.Parse(c.Labels[p.label])
 		if err != nil {
-			log.Printf("Container %s contains invalid goreverse Url: %s\n", c.ID, c.Labels["goreverse"])
+			log.Printf("Container %s contains invalid goreverse Url: %s\n", c.ID, c.Labels[p.label])
 		}
 		var to *url.URL
 		for _, port := range c.Ports {
