@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/lexysoda/goreverse/proxy"
 )
 
 func main() {
@@ -13,7 +15,7 @@ func main() {
 	label := flag.String("l", "goreverse", "Container label")
 	flag.Parse()
 
-	p, err := New(*interval, *label)
+	p, err := proxy.New(*interval, *label)
 	if err != nil {
 		log.Fatal(err)
 	}
