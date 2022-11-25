@@ -14,9 +14,13 @@ import (
 	"github.com/docker/docker/client"
 )
 
+type dockerCli interface {
+	ContainerList(context.Context, types.ContainerListOptions) ([]types.Container, error)
+}
+
 type Proxy struct {
 	Hosts    map[string]*httputil.ReverseProxy
-	cli      *client.Client
+	cli      dockerCli
 	interval time.Duration
 	label    string
 }
@@ -95,6 +99,6 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%sNo matching entry found\n", out)
 		return
 	}
-	log.Printf("%sRedirecting to %s\n", out, h)
+	log.Printf("%sRedirecting to %s\n", out, r.Host)
 	h.ServeHTTP(w, r)
 }
