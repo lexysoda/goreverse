@@ -20,7 +20,7 @@ type Proxy struct {
 	cli      *client.Client
 	interval time.Duration
 	label    string
-	sync.Mutex
+	sync.RWMutex
 }
 
 func New(interval string, label string) (*Proxy, error) {
@@ -85,8 +85,8 @@ func (p *Proxy) refreshHosts() {
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	out := fmt.Sprintf("Received request for %s: ", r.Host)
-	p.Lock()
-	defer p.Unlock()
+	p.RLock()
+	defer p.RUnlock()
 	h, ok := p.Hosts[r.Host]
 	if !ok {
 		log.Printf("%sNo matching entry found\n", out)
